@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIP - Scrap Collector | 3D Platformer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: 'Courier New', monospace;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #f0c040;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        #scrap-counter {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        #jet-fuel-container {
+            width: 200px;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #f0c040;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #jet-fuel-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b35, #f0c040);
+            transition: width 0.1s;
+            width: 100%;
+        }
+        #jet-fuel-label {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #aaa;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        #title-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #f0c040;
+            z-index: 100;
+        }
+        #title-screen h1 {
+            font-size: 72px;
+            margin-bottom: 10px;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #f0c040, 0 0 20px #f0c040; }
+            to { text-shadow: 0 0 20px #ff6b35, 0 0 40px #ff6b35; }
+        }
+        #title-screen h2 {
+            font-size: 28px;
+            color: #888;
+            margin-bottom: 40px;
+        }
+        #start-btn {
+            padding: 15px 50px;
+            font-size: 24px;
+            background: linear-gradient(135deg, #f0c040 0%, #ff6b35 100%);
+            border: none;
+            border-radius: 10px;
+            color: #1a1a2e;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #start-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(240, 192, 64, 0.5);
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #f0c040;
+            font-size: 48px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(240, 192, 64, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="ui">
+            <div id="scrap-counter">SCRAP: 0</div>
+            <div id="jet-fuel-container">
+                <div id="jet-fuel-bar"></div>
+            </div>
+            <div id="jet-fuel-label">JUMP JETS</div>
+        </div>
+        <div id="controls">
+            WASD - Move | SPACE - Jump | SHIFT - Jump Jets | CLICK - Wrench Attack<br>
+            MOUSE - Look Around
+        </div>
+        <div id="message"></div>
+        <div id="crosshair"></div>
+        <div id="title-screen">
+            <h1>PIP</h1>
+            <h2>SCRAP COLLECTOR</h2>
+            <button id="start-btn">START GAME</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Game State
+        let gameStarted = false;
+        let scrapCollected = 0;
+        let jetFuel = 100;
+        const maxJetFuel = 100;
+        let isAttacking = false;
+        let attackCooldown = 0;
+
+        // Three.js Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        scene.fog = new THREE.Fog(0x1a1a2e, 50, 150);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('game-container').appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(50, 100, 50);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 500;
+        directionalLight.shadow.camera.left = -100;
+        directionalLight.shadow.camera.right = 100;
+        directionalLight.shadow.camera.top = 100;
+        directionalLight.shadow.camera.bottom = -100;
+        scene.add(directionalLight);
+
+        // Add point lights for atmosphere
+        const pointLight1 = new THREE.PointLight(0xff6b35, 1, 50);
+        pointLight1.position.set(-20, 10, -20);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x40c0f0, 1, 50);
+        pointLight2.position.set(20, 15, 20);
+        scene.add(pointLight2);
+
+        // Materials
+        const metalMaterial = new THREE.MeshStandardMaterial({
+            color: 0x666677,
+            metalness: 0.8,
+            roughness: 0.3
+        });
+        const darkMetalMaterial = new THREE.MeshStandardMaterial({
+            color: 0x333344,
+            metalness: 0.7,
+            roughness: 0.4
+        });
+        const brassMetalMaterial = new THREE.MeshStandardMaterial({
+            color: 0xb8860b,
+            metalness: 0.9,
+            roughness: 0.2
+        });
+        const eyeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00ffff,
+            emissive: 0x00ffff,
+            emissiveIntensity: 0.5
+        });
+        const capeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x4a3728,
+            roughness: 0.9,
+            side: THREE.DoubleSide
+        });
+
+        // PIP Robot Character
+        const pip = new THREE.Group();
+
+        // Bucket Head
+        const headGeometry = new THREE.CylinderGeometry(0.6, 0.5, 0.9, 16);
+        const head = new THREE.Mesh(headGeometry, metalMaterial);
+        head.position.y = 2.2;
+        head.castShadow = true;
+        pip.add(head);
+
+        // Head rim
+        const rimGeometry = new THREE.TorusGeometry(0.55, 0.08, 8, 16);
+        const rim = new THREE.Mesh(rimGeometry, darkMetalMaterial);
+        rim.rotation.x = Math.PI / 2;
+        rim.position.y = 1.8;
+        rim.castShadow = true;
+        pip.add(rim);
+
+        // Eye
+        const eyeSocketGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.15, 16);
+        const eyeSocket = new THREE.Mesh(eyeSocketGeometry, darkMetalMaterial);
+        eyeSocket.rotation.x = Math.PI / 2;
+        eyeSocket.position.set(0, 2.1, 0.5);
+        pip.add(eyeSocket);
+
+        const eyeGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+        const eye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+        eye.position.set(0, 2.1, 0.55);
+        pip.add(eye);
+
+        // Eye glow light
+        const eyeLight = new THREE.PointLight(0x00ffff, 0.5, 3);
+        eyeLight.position.set(0, 2.1, 0.7);
+        pip.add(eyeLight);
+
+        // Neck
+        const neckGeometry = new THREE.CylinderGeometry(0.15, 0.2, 0.3, 8);
+        const neck = new THREE.Mesh(neckGeometry, darkMetalMaterial);
+        neck.position.y = 1.6;
+        neck.castShadow = true;
+        pip.add(neck);
+
+        // Torso (with exposed gears)
+        const torsoGeometry = new THREE.BoxGeometry(0.8, 0.7, 0.5);
+        const torso = new THREE.Mesh(torsoGeometry, darkMetalMaterial);
+        torso.position.y = 1.2;
+        torso.castShadow = true;
+        pip.add(torso);
+
+        // Main Gear 1
+        const gearGeometry1 = new THREE.TorusGeometry(0.2, 0.04, 8, 16);
+        const gear1 = new THREE.Mesh(gearGeometry1, brassMetalMaterial);
+        gear1.position.set(-0.1, 1.3, 0.26);
+        gear1.castShadow = true;
+        pip.add(gear1);
+
+        // Gear teeth 1
+        for (let i = 0; i < 8; i++) {
+            const toothGeometry = new THREE.BoxGeometry(0.05, 0.08, 0.04);
+            const tooth = new THREE.Mesh(toothGeometry, brassMetalMaterial);
+            const angle = (i / 8) * Math.PI * 2;
+            tooth.position.set(
+                -0.1 + Math.cos(angle) * 0.22,
+                1.3 + Math.sin(angle) * 0.22,
+                0.26
+            );
+            tooth.rotation.z = angle;
+            pip.add(tooth);
+        }
+
+        // Main Gear 2
+        const gear2 = new THREE.Mesh(gearGeometry1, brassMetalMaterial);
+        gear2.position.set(0.15, 1.15, 0.26);
+        gear2.castShadow = true;
+        pip.add(gear2);
+
+        // Gear teeth 2
+        for (let i = 0; i < 8; i++) {
+            const toothGeometry = new THREE.BoxGeometry(0.05, 0.08, 0.04);
+            const tooth = new THREE.Mesh(toothGeometry, brassMetalMaterial);
+            const angle = (i / 8) * Math.PI * 2 + 0.2;
+            tooth.position.set(
+                0.15 + Math.cos(angle) * 0.22,
+                1.15 + Math.sin(angle) * 0.22,
+                0.26
+            );
+            tooth.rotation.z = angle;
+            pip.add(tooth);
+        }
+
+        // Small gear
+        const smallGearGeometry = new THREE.TorusGeometry(0.1, 0.03, 8, 12);
+        const smallGear = new THREE.Mesh(smallGearGeometry, brassMetalMaterial);
+        smallGear.position.set(0.25, 1.35, 0.26);
+        pip.add(smallGear);
+
+        // Belt/Waist
+        const beltGeometry = new THREE.TorusGeometry(0.35, 0.08, 8, 16);
+        const belt = new THREE.Mesh(beltGeometry, darkMetalMaterial);
+        belt.rotation.x = Math.PI / 2;
+        belt.position.y = 0.8;
+        belt.castShadow = true;
+        pip.add(belt);
+
+        // Belt studs
+        for (let i = 0; i < 8; i++) {
+            const studGeometry = new THREE.SphereGeometry(0.04, 8, 8);
+            const stud = new THREE.Mesh(studGeometry, brassMetalMaterial);
+            const angle = (i / 8) * Math.PI * 2;
+            stud.position.set(
+                Math.cos(angle) * 0.38,
+                0.8,
+                Math.sin(angle) * 0.38
+            );
+            pip.add(stud);
+        }
+
+        // Hips
+        const hipsGeometry = new THREE.BoxGeometry(0.5, 0.2, 0.3);
+        const hips = new THREE.Mesh(hipsGeometry, darkMetalMaterial);
+        hips.position.y = 0.6;
+        hips.castShadow = true;
+        pip.add(hips);
+
+        // Left Leg
+        const leftLeg = new THREE.Group();
+
+        const upperLegGeometry = new THREE.CylinderGeometry(0.06, 0.05, 0.4, 8);
+        const leftUpperLeg = new THREE.Mesh(upperLegGeometry, metalMaterial);
+        leftUpperLeg.position.y = 0.3;
+        leftLeg.add(leftUpperLeg);
+
+        const kneeGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+        const leftKnee = new THREE.Mesh(kneeGeometry, brassMetalMaterial);
+        leftKnee.position.y = 0.1;
+        leftLeg.add(leftKnee);
+
+        const lowerLegGeometry = new THREE.CylinderGeometry(0.05, 0.04, 0.4, 8);
+        const leftLowerLeg = new THREE.Mesh(lowerLegGeometry, metalMaterial);
+        leftLowerLeg.position.y = -0.15;
+        leftLeg.add(leftLowerLeg);
+
+        const footGeometry = new THREE.BoxGeometry(0.15, 0.08, 0.25);
+        const leftFoot = new THREE.Mesh(footGeometry, darkMetalMaterial);
+        leftFoot.position.set(0, -0.4, 0.05);
+        leftLeg.add(leftFoot);
+
+        leftLeg.position.set(-0.15, 0.5, 0);
+        leftLeg.castShadow = true;
+        pip.add(leftLeg);
+
+        // Right Leg
+        const rightLeg = new THREE.Group();
+
+        const rightUpperLeg = new THREE.Mesh(upperLegGeometry, metalMaterial);
+        rightUpperLeg.position.y = 0.3;
+        rightLeg.add(rightUpperLeg);
+
+        const rightKnee = new THREE.Mesh(kneeGeometry, brassMetalMaterial);
+        rightKnee.position.y = 0.1;
+        rightLeg.add(rightKnee);
+
+        const rightLowerLeg = new THREE.Mesh(lowerLegGeometry, metalMaterial);
+        rightLowerLeg.position.y = -0.15;
+        rightLeg.add(rightLowerLeg);
+
+        const rightFoot = new THREE.Mesh(footGeometry, darkMetalMaterial);
+        rightFoot.position.set(0, -0.4, 0.05);
+        rightLeg.add(rightFoot);
+
+        rightLeg.position.set(0.15, 0.5, 0);
+        rightLeg.castShadow = true;
+        pip.add(rightLeg);
+
+        // Left Arm (holding wrench)
+        const leftArm = new THREE.Group();
+
+        const shoulderGeometry = new THREE.SphereGeometry(0.12, 8, 8);
+        const leftShoulder = new THREE.Mesh(shoulderGeometry, brassMetalMaterial);
+        leftShoulder.position.y = 0;
+        leftArm.add(leftShoulder);
+
+        const upperArmGeometry = new THREE.CylinderGeometry(0.05, 0.04, 0.35, 8);
+        const leftUpperArm = new THREE.Mesh(upperArmGeometry, metalMaterial);
+        leftUpperArm.position.y = -0.2;
+        leftUpperArm.rotation.z = 0.3;
+        leftArm.add(leftUpperArm);
+
+        const elbowGeometry = new THREE.SphereGeometry(0.06, 8, 8);
+        const leftElbow = new THREE.Mesh(elbowGeometry, brassMetalMaterial);
+        leftElbow.position.y = -0.4;
+        leftArm.add(leftElbow);
+
+        const lowerArmGeometry = new THREE.CylinderGeometry(0.04, 0.05, 0.3, 8);
+        const leftLowerArm = new THREE.Mesh(lowerArmGeometry, metalMaterial);
+        leftLowerArm.position.set(-0.05, -0.55, 0);
+        leftLowerArm.rotation.z = -0.5;
+        leftArm.add(leftLowerArm);
+
+        // Hand/Gripper
+        const handGeometry = new THREE.BoxGeometry(0.1, 0.08, 0.08);
+        const leftHand = new THREE.Mesh(handGeometry, darkMetalMaterial);
+        leftHand.position.set(-0.1, -0.7, 0);
+        leftArm.add(leftHand);
+
+        // Wrench
+        const wrenchGroup = new THREE.Group();
+
+        const wrenchHandleGeometry = new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8);
+        const wrenchHandle = new THREE.Mesh(wrenchHandleGeometry, metalMaterial);
+        wrenchHandle.rotation.z = Math.PI / 2;
+        wrenchGroup.add(wrenchHandle);
+
+        // Wrench head
+        const wrenchHeadGeometry = new THREE.BoxGeometry(0.15, 0.25, 0.08);
+        const wrenchHead = new THREE.Mesh(wrenchHeadGeometry, metalMaterial);
+        wrenchHead.position.x = -0.65;
+        wrenchGroup.add(wrenchHead);
+
+        // Wrench jaw opening
+        const jawGeometry = new THREE.BoxGeometry(0.08, 0.12, 0.1);
+        const jaw = new THREE.Mesh(jawGeometry, new THREE.MeshStandardMaterial({ color: 0x1a1a2e }));
+        jaw.position.set(-0.72, 0, 0);
+        wrenchGroup.add(jaw);
+
+        wrenchGroup.position.set(-0.1, -0.75, 0.3);
+        wrenchGroup.rotation.y = -0.5;
+        leftArm.add(wrenchGroup);
+
+        leftArm.position.set(-0.5, 1.3, 0);
+        pip.add(leftArm);
+
+        // Right Arm (with claw/gripper)
+        const rightArm = new THREE.Group();
+
+        const rightShoulder = new THREE.Mesh(shoulderGeometry, brassMetalMaterial);
+        rightShoulder.position.y = 0;
+        rightArm.add(rightShoulder);
+
+        const rightUpperArm = new THREE.Mesh(upperArmGeometry, metalMaterial);
+        rightUpperArm.position.y = -0.2;
+        rightUpperArm.rotation.z = -0.3;
+        rightArm.add(rightUpperArm);
+
+        const rightElbow = new THREE.Mesh(elbowGeometry, brassMetalMaterial);
+        rightElbow.position.y = -0.4;
+        rightArm.add(rightElbow);
+
+        const rightLowerArm = new THREE.Mesh(lowerArmGeometry, metalMaterial);
+        rightLowerArm.position.set(0.05, -0.55, 0);
+        rightLowerArm.rotation.z = 0.5;
+        rightArm.add(rightLowerArm);
+
+        // Claw gripper
+        const clawBase = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.1), darkMetalMaterial);
+        clawBase.position.set(0.1, -0.7, 0);
+        rightArm.add(clawBase);
+
+        for (let i = 0; i < 3; i++) {
+            const fingerGeometry = new THREE.BoxGeometry(0.03, 0.15, 0.03);
+            const finger = new THREE.Mesh(fingerGeometry, metalMaterial);
+            finger.position.set(0.1 + (i - 1) * 0.05, -0.85, 0);
+            finger.rotation.x = 0.3;
+            rightArm.add(finger);
+        }
+
+        rightArm.position.set(0.5, 1.3, 0);
+        pip.add(rightArm);
+
+        // Cape
+        const capeShape = new THREE.Shape();
+        capeShape.moveTo(0, 0);
+        capeShape.lineTo(-0.5, 0);
+        capeShape.lineTo(-0.7, -1.2);
+        capeShape.lineTo(0.7, -1.2);
+        capeShape.lineTo(0.5, 0);
+        capeShape.lineTo(0, 0);
+
+        const capeGeometry = new THREE.ShapeGeometry(capeShape);
+        const cape = new THREE.Mesh(capeGeometry, capeMaterial);
+        cape.position.set(0, 1.5, -0.3);
+        cape.rotation.x = 0.2;
+        cape.castShadow = true;
+        pip.add(cape);
+
+        // Tattered cape edges
+        for (let i = 0; i < 5; i++) {
+            const tearGeometry = new THREE.PlaneGeometry(0.15, 0.2);
+            const tear = new THREE.Mesh(tearGeometry, capeMaterial);
+            tear.position.set(-0.5 + i * 0.25, 0.35, -0.35);
+            tear.rotation.x = 0.3 + Math.random() * 0.2;
+            tear.rotation.z = Math.random() * 0.3 - 0.15;
+            pip.add(tear);
+        }
+
+        // Jump Jets (on back)
+        const jetGroup = new THREE.Group();
+
+        // Left jet
+        const jetCasingGeometry = new THREE.CylinderGeometry(0.12, 0.15, 0.35, 12);
+        const leftJet = new THREE.Mesh(jetCasingGeometry, darkMetalMaterial);
+        leftJet.position.set(-0.25, 1.1, -0.35);
+        jetGroup.add(leftJet);
+
+        // Right jet
+        const rightJet = new THREE.Mesh(jetCasingGeometry, darkMetalMaterial);
+        rightJet.position.set(0.25, 1.1, -0.35);
+        jetGroup.add(rightJet);
+
+        // Jet nozzles
+        const nozzleGeometry = new THREE.ConeGeometry(0.1, 0.15, 12);
+        const leftNozzle = new THREE.Mesh(nozzleGeometry, brassMetalMaterial);
+        leftNozzle.position.set(-0.25, 0.85, -0.35);
+        leftNozzle.rotation.x = Math.PI;
+        jetGroup.add(leftNozzle);
+
+        const rightNozzle = new THREE.Mesh(nozzleGeometry, brassMetalMaterial);
+        rightNozzle.position.set(0.25, 0.85, -0.35);
+        rightNozzle.rotation.x = Math.PI;
+        jetGroup.add(rightNozzle);
+
+        pip.add(jetGroup);
+
+        // Jet flames (initially hidden)
+        const flameGeometry = new THREE.ConeGeometry(0.08, 0.4, 8);
+        const flameMaterial = new THREE.MeshBasicMaterial({
+            color: 0xff6b35,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const leftFlame = new THREE.Mesh(flameGeometry, flameMaterial);
+        leftFlame.position.set(-0.25, 0.6, -0.35);
+        leftFlame.rotation.x = Math.PI;
+        leftFlame.visible = false;
+        pip.add(leftFlame);
+
+        const rightFlame = new THREE.Mesh(flameGeometry, flameMaterial);
+        rightFlame.position.set(0.25, 0.6, -0.35);
+        rightFlame.rotation.x = Math.PI;
+        rightFlame.visible = false;
+        pip.add(rightFlame);
+
+        // Flame lights
+        const leftFlameLight = new THREE.PointLight(0xff6b35, 0, 5);
+        leftFlameLight.position.set(-0.25, 0.5, -0.35);
+        pip.add(leftFlameLight);
+
+        const rightFlameLight = new THREE.PointLight(0xff6b35, 0, 5);
+        rightFlameLight.position.set(0.25, 0.5, -0.35);
+        pip.add(rightFlameLight);
+
+        pip.position.y = 3;
+        pip.castShadow = true;
+        scene.add(pip);
+
+        // Player physics
+        const player = {
+            velocity: new THREE.Vector3(0, 0, 0),
+            onGround: false,
+            speed: 8,
+            jumpForce: 12,
+            jetForce: 15,
+            rotation: 0,
+            cameraAngleX: 0,
+            cameraAngleY: 0
+        };
+
+        // Platform creation helper
+        function createPlatform(x, y, z, width, height, depth, color = 0x4a4a5a, isMoving = false, moveAxis = 'x', moveRange = 5, moveSpeed = 1) {
+            const geometry = new THREE.BoxGeometry(width, height, depth);
+            const material = new THREE.MeshStandardMaterial({
+                color: color,
+                metalness: 0.3,
+                roughness: 0.7
+            });
+            const platform = new THREE.Mesh(geometry, material);
+            platform.position.set(x, y, z);
+            platform.castShadow = true;
+            platform.receiveShadow = true;
+
+            // Add edge details
+            const edgeGeometry = new THREE.BoxGeometry(width + 0.1, 0.1, depth + 0.1);
+            const edgeMaterial = new THREE.MeshStandardMaterial({ color: 0x666677, metalness: 0.5 });
+            const topEdge = new THREE.Mesh(edgeGeometry, edgeMaterial);
+            topEdge.position.y = height / 2;
+            platform.add(topEdge);
+
+            platform.userData = {
+                isMoving: isMoving,
+                moveAxis: moveAxis,
+                moveRange: moveRange,
+                moveSpeed: moveSpeed,
+                startPos: { x, y, z },
+                time: Math.random() * Math.PI * 2
+            };
+
+            return platform;
+        }
+
+        // Create scrap collectibles
+        const scraps = [];
+        function createScrap(x, y, z) {
+            const scrapGroup = new THREE.Group();
+
+            // Random scrap pieces
+            const types = ['gear', 'bolt', 'plate'];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            let mesh;
+            if (type === 'gear') {
+                const gearGeo = new THREE.TorusGeometry(0.3, 0.08, 8, 12);
+                mesh = new THREE.Mesh(gearGeo, brassMetalMaterial.clone());
+            } else if (type === 'bolt') {
+                const boltGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.4, 6);
+                mesh = new THREE.Mesh(boltGeo, metalMaterial.clone());
+            } else {
+                const plateGeo = new THREE.BoxGeometry(0.4, 0.1, 0.3);
+                mesh = new THREE.Mesh(plateGeo, metalMaterial.clone());
+            }
+
+            mesh.material.emissive = new THREE.Color(0xf0c040);
+            mesh.material.emissiveIntensity = 0.3;
+            scrapGroup.add(mesh);
+
+            // Glow effect
+            const glowLight = new THREE.PointLight(0xf0c040, 0.5, 3);
+            scrapGroup.add(glowLight);
+
+            scrapGroup.position.set(x, y, z);
+            scrapGroup.userData = {
+                collected: false,
+                bobOffset: Math.random() * Math.PI * 2
+            };
+
+            return scrapGroup;
+        }
+
+        // Create level
+        const platforms = [];
+
+        // Ground platform
+        const ground = createPlatform(0, -1, 0, 30, 2, 30, 0x3a3a4a);
+        platforms.push(ground);
+        scene.add(ground);
+
+        // Starting area platforms
+        platforms.push(createPlatform(8, 2, 0, 6, 1, 6, 0x4a4a5a));
+        platforms.push(createPlatform(16, 5, -5, 5, 1, 5, 0x5a5a6a));
+        platforms.push(createPlatform(20, 8, 5, 4, 1, 4, 0x4a5a6a));
+
+        // Moving platforms
+        platforms.push(createPlatform(28, 6, 0, 4, 1, 4, 0x6a5a4a, true, 'y', 4, 1.5));
+        platforms.push(createPlatform(35, 12, 0, 5, 1, 5, 0x5a6a5a));
+        platforms.push(createPlatform(40, 12, -8, 4, 1, 4, 0x5a5a6a, true, 'x', 6, 2));
+
+        // Vertical challenge
+        platforms.push(createPlatform(-10, 3, 5, 4, 1, 4, 0x4a5a5a));
+        platforms.push(createPlatform(-15, 7, 8, 3, 1, 3, 0x5a4a5a));
+        platforms.push(createPlatform(-12, 12, 3, 4, 1, 4, 0x5a5a4a));
+        platforms.push(createPlatform(-8, 17, 0, 5, 1, 5, 0x6a5a5a, true, 'z', 5, 1));
+
+        // High platforms (require jet usage)
+        platforms.push(createPlatform(0, 20, -15, 6, 1, 6, 0x5a6a6a));
+        platforms.push(createPlatform(10, 25, -20, 5, 1, 5, 0x6a6a5a));
+        platforms.push(createPlatform(-5, 30, -25, 8, 1, 8, 0x7a6a5a));
+
+        // Floating islands
+        platforms.push(createPlatform(30, 20, 20, 7, 2, 7, 0x5a5a7a));
+        platforms.push(createPlatform(40, 25, 25, 5, 1, 5, 0x6a5a7a, true, 'y', 3, 2));
+        platforms.push(createPlatform(50, 30, 20, 6, 1, 6, 0x7a5a6a));
+
+        // Add all platforms to scene
+        platforms.forEach(p => scene.add(p));
+
+        // Create scraps on platforms
+        const scrapPositions = [
+            [8, 4, 0], [16, 7, -5], [20, 10, 5],
+            [35, 14, 0], [40, 14, -8],
+            [-10, 5, 5], [-15, 9, 8], [-12, 14, 3], [-8, 19, 0],
+            [0, 22, -15], [10, 27, -20], [-5, 32, -25],
+            [30, 23, 20], [40, 28, 25], [50, 32, 20],
+            [0, 1, 5], [0, 1, -5], [5, 1, 0], [-5, 1, 0],
+            [28, 10, 0], [-5, 32, -22], [-5, 32, -28]
+        ];
+
+        scrapPositions.forEach(pos => {
+            const scrap = createScrap(pos[0], pos[1], pos[2]);
+            scraps.push(scrap);
+            scene.add(scrap);
+        });
+
+        // Add decorative elements
+        // Industrial pillars
+        for (let i = 0; i < 8; i++) {
+            const pillarGeometry = new THREE.CylinderGeometry(0.5, 0.6, 15, 8);
+            const pillar = new THREE.Mesh(pillarGeometry, darkMetalMaterial);
+            const angle = (i / 8) * Math.PI * 2;
+            pillar.position.set(Math.cos(angle) * 40, 6, Math.sin(angle) * 40);
+            pillar.castShadow = true;
+            scene.add(pillar);
+
+            // Light on top
+            const lightBulb = new THREE.PointLight(
+                i % 2 === 0 ? 0xff6b35 : 0x40c0f0,
+                0.8,
+                20
+            );
+            lightBulb.position.set(Math.cos(angle) * 40, 14, Math.sin(angle) * 40);
+            scene.add(lightBulb);
+        }
+
+        // Floating debris
+        for (let i = 0; i < 20; i++) {
+            const debrisGeometry = new THREE.BoxGeometry(
+                Math.random() * 0.5 + 0.2,
+                Math.random() * 0.5 + 0.2,
+                Math.random() * 0.5 + 0.2
+            );
+            const debris = new THREE.Mesh(debrisGeometry, metalMaterial);
+            debris.position.set(
+                (Math.random() - 0.5) * 100,
+                Math.random() * 30 + 5,
+                (Math.random() - 0.5) * 100
+            );
+            debris.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+            debris.userData.floatOffset = Math.random() * Math.PI * 2;
+            scene.add(debris);
+        }
+
+        // Controls
+        const keys = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            jump: false,
+            jets: false,
+            attack: false
+        };
+
+        let mouseLocked = false;
+
+        document.addEventListener('keydown', (e) => {
+            if (!gameStarted) return;
+            switch(e.code) {
+                case 'KeyW':
+                case 'ArrowUp':
+                    keys.forward = true;
+                    break;
+                case 'KeyS':
+                case 'ArrowDown':
+                    keys.backward = true;
+                    break;
+                case 'KeyA':
+                case 'ArrowLeft':
+                    keys.left = true;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    keys.right = true;
+                    break;
+                case 'Space':
+                    keys.jump = true;
+                    break;
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    keys.jets = true;
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'KeyW':
+                case 'ArrowUp':
+                    keys.forward = false;
+                    break;
+                case 'KeyS':
+                case 'ArrowDown':
+                    keys.backward = false;
+                    break;
+                case 'KeyA':
+                case 'ArrowLeft':
+                    keys.left = false;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    keys.right = false;
+                    break;
+                case 'Space':
+                    keys.jump = false;
+                    break;
+                case 'ShiftLeft':
+                case 'ShiftRight':
+                    keys.jets = false;
+                    break;
+            }
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            if (!gameStarted) return;
+            if (e.button === 0) {
+                keys.attack = true;
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                keys.attack = false;
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!gameStarted || !mouseLocked) return;
+
+            player.cameraAngleY -= e.movementX * 0.002;
+            player.cameraAngleX -= e.movementY * 0.002;
+            player.cameraAngleX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, player.cameraAngleX));
+        });
+
+        renderer.domElement.addEventListener('click', () => {
+            if (gameStarted && !mouseLocked) {
+                renderer.domElement.requestPointerLock();
+            }
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            mouseLocked = document.pointerLockElement === renderer.domElement;
+            document.getElementById('crosshair').style.display = mouseLocked ? 'block' : 'none';
+        });
+
+        // Start button
+        document.getElementById('start-btn').addEventListener('click', () => {
+            gameStarted = true;
+            document.getElementById('title-screen').style.display = 'none';
+            renderer.domElement.requestPointerLock();
+        });
+
+        // Collision detection
+        function checkPlatformCollision(position, velocity) {
+            const playerRadius = 0.4;
+            const playerHeight = 2.5;
+            let onGround = false;
+            let groundY = -Infinity;
+
+            for (const platform of platforms) {
+                const px = platform.position.x;
+                const py = platform.position.y;
+                const pz = platform.position.z;
+                const hw = platform.geometry.parameters.width / 2;
+                const hh = platform.geometry.parameters.height / 2;
+                const hd = platform.geometry.parameters.depth / 2;
+
+                // Check if player is above platform
+                if (position.x >= px - hw - playerRadius &&
+                    position.x <= px + hw + playerRadius &&
+                    position.z >= pz - hd - playerRadius &&
+                    position.z <= pz + hd + playerRadius) {
+
+                    const platformTop = py + hh;
+
+                    // Landing on top
+                    if (velocity.y <= 0 &&
+                        position.y >= platformTop &&
+                        position.y <= platformTop + 1) {
+                        if (platformTop > groundY) {
+                            groundY = platformTop;
+                            onGround = true;
+                        }
+                    }
+
+                    // Bottom collision
+                    const platformBottom = py - hh;
+                    if (velocity.y > 0 &&
+                        position.y + playerHeight >= platformBottom &&
+                        position.y + playerHeight <= platformBottom + 0.5) {
+                        velocity.y = 0;
+                    }
+                }
+
+                // Side collisions
+                if (position.y < py + hh && position.y + playerHeight > py - hh) {
+                    // X axis collision
+                    if (position.z >= pz - hd - playerRadius &&
+                        position.z <= pz + hd + playerRadius) {
+                        if (position.x < px && position.x > px - hw - playerRadius - 0.1) {
+                            position.x = px - hw - playerRadius;
+                            velocity.x = Math.min(0, velocity.x);
+                        }
+                        if (position.x > px && position.x < px + hw + playerRadius + 0.1) {
+                            position.x = px + hw + playerRadius;
+                            velocity.x = Math.max(0, velocity.x);
+                        }
+                    }
+                    // Z axis collision
+                    if (position.x >= px - hw - playerRadius &&
+                        position.x <= px + hw + playerRadius) {
+                        if (position.z < pz && position.z > pz - hd - playerRadius - 0.1) {
+                            position.z = pz - hd - playerRadius;
+                            velocity.z = Math.min(0, velocity.z);
+                        }
+                        if (position.z > pz && position.z < pz + hd + playerRadius + 0.1) {
+                            position.z = pz + hd + playerRadius;
+                            velocity.z = Math.max(0, velocity.z);
+                        }
+                    }
+                }
+            }
+
+            return { onGround, groundY };
+        }
+
+        // Check scrap collection
+        function checkScrapCollection() {
+            const collectRadius = 1.5;
+
+            scraps.forEach(scrap => {
+                if (scrap.userData.collected) return;
+
+                const distance = pip.position.distanceTo(scrap.position);
+                if (distance < collectRadius) {
+                    scrap.userData.collected = true;
+                    scrap.visible = false;
+                    scrapCollected++;
+                    document.getElementById('scrap-counter').textContent = `SCRAP: ${scrapCollected}`;
+
+                    // Show message if collected certain amounts
+                    if (scrapCollected === 10) {
+                        showMessage("Great collecting!");
+                    } else if (scrapCollected === scraps.length) {
+                        showMessage("ALL SCRAP COLLECTED!");
+                    }
+                }
+            });
+        }
+
+        function showMessage(text) {
+            const msgEl = document.getElementById('message');
+            msgEl.textContent = text;
+            msgEl.style.opacity = '1';
+            setTimeout(() => {
+                msgEl.style.opacity = '0';
+            }, 2000);
+        }
+
+        // Animation
+        let lastTime = 0;
+        const gravity = -25;
+        let walkCycle = 0;
+        let gearRotation = 0;
+
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+
+            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
+            lastTime = currentTime;
+
+            if (!gameStarted) {
+                // Title screen animation
+                pip.rotation.y += deltaTime * 0.5;
+                renderer.render(scene, camera);
+                return;
+            }
+
+            // Update moving platforms
+            platforms.forEach(platform => {
+                if (platform.userData.isMoving) {
+                    platform.userData.time += deltaTime * platform.userData.moveSpeed;
+                    const offset = Math.sin(platform.userData.time) * platform.userData.moveRange;
+
+                    switch(platform.userData.moveAxis) {
+                        case 'x':
+                            platform.position.x = platform.userData.startPos.x + offset;
+                            break;
+                        case 'y':
+                            platform.position.y = platform.userData.startPos.y + offset;
+                            break;
+                        case 'z':
+                            platform.position.z = platform.userData.startPos.z + offset;
+                            break;
+                    }
+                }
+            });
+
+            // Movement
+            const moveDirection = new THREE.Vector3();
+
+            if (keys.forward) moveDirection.z -= 1;
+            if (keys.backward) moveDirection.z += 1;
+            if (keys.left) moveDirection.x -= 1;
+            if (keys.right) moveDirection.x += 1;
+
+            if (moveDirection.length() > 0) {
+                moveDirection.normalize();
+
+                // Rotate movement direction based on camera
+                const rotatedMove = new THREE.Vector3(
+                    moveDirection.x * Math.cos(player.cameraAngleY) - moveDirection.z * Math.sin(player.cameraAngleY),
+                    0,
+                    moveDirection.x * Math.sin(player.cameraAngleY) + moveDirection.z * Math.cos(player.cameraAngleY)
+                );
+
+                player.velocity.x = rotatedMove.x * player.speed;
+                player.velocity.z = rotatedMove.z * player.speed;
+
+                // Face movement direction
+                pip.rotation.y = Math.atan2(rotatedMove.x, rotatedMove.z);
+
+                // Walk animation
+                walkCycle += deltaTime * 10;
+                leftLeg.rotation.x = Math.sin(walkCycle) * 0.4;
+                rightLeg.rotation.x = Math.sin(walkCycle + Math.PI) * 0.4;
+                leftArm.rotation.x = Math.sin(walkCycle + Math.PI) * 0.2;
+                rightArm.rotation.x = Math.sin(walkCycle) * 0.2;
+            } else {
+                player.velocity.x *= 0.8;
+                player.velocity.z *= 0.8;
+
+                // Reset limb positions
+                leftLeg.rotation.x *= 0.9;
+                rightLeg.rotation.x *= 0.9;
+                leftArm.rotation.x *= 0.9;
+                rightArm.rotation.x *= 0.9;
+            }
+
+            // Jumping
+            if (keys.jump && player.onGround) {
+                player.velocity.y = player.jumpForce;
+                player.onGround = false;
+            }
+
+            // Jump Jets
+            let jetsActive = false;
+            if (keys.jets && jetFuel > 0 && !player.onGround) {
+                player.velocity.y += player.jetForce * deltaTime;
+                player.velocity.y = Math.min(player.velocity.y, 15);
+                jetFuel -= deltaTime * 30;
+                jetFuel = Math.max(0, jetFuel);
+                jetsActive = true;
+            }
+
+            // Jet fuel regeneration (when on ground)
+            if (player.onGround && jetFuel < maxJetFuel) {
+                jetFuel += deltaTime * 20;
+                jetFuel = Math.min(maxJetFuel, jetFuel);
+            }
+
+            // Update jet visuals
+            leftFlame.visible = jetsActive;
+            rightFlame.visible = jetsActive;
+            leftFlameLight.intensity = jetsActive ? 2 : 0;
+            rightFlameLight.intensity = jetsActive ? 2 : 0;
+
+            if (jetsActive) {
+                leftFlame.scale.y = 0.8 + Math.random() * 0.4;
+                rightFlame.scale.y = 0.8 + Math.random() * 0.4;
+            }
+
+            // Update UI
+            document.getElementById('jet-fuel-bar').style.width = `${jetFuel}%`;
+
+            // Attack animation
+            if (keys.attack && attackCooldown <= 0) {
+                isAttacking = true;
+                attackCooldown = 0.5;
+                leftArm.rotation.z = -1.5;
+            }
+
+            if (attackCooldown > 0) {
+                attackCooldown -= deltaTime;
+                if (attackCooldown <= 0.3) {
+                    leftArm.rotation.z *= 0.8;
+                }
+            }
+
+            // Gravity
+            player.velocity.y += gravity * deltaTime;
+
+            // Apply velocity
+            pip.position.x += player.velocity.x * deltaTime;
+            pip.position.y += player.velocity.y * deltaTime;
+            pip.position.z += player.velocity.z * deltaTime;
+
+            // Collision detection
+            const collision = checkPlatformCollision(pip.position, player.velocity);
+            player.onGround = collision.onGround;
+
+            if (collision.onGround && player.velocity.y <= 0) {
+                pip.position.y = collision.groundY;
+                player.velocity.y = 0;
+            }
+
+            // Fall reset
+            if (pip.position.y < -50) {
+                pip.position.set(0, 5, 0);
+                player.velocity.set(0, 0, 0);
+                showMessage("Don't fall!");
+            }
+
+            // Check scrap collection
+            checkScrapCollection();
+
+            // Rotate gears
+            gearRotation += deltaTime * 2;
+            gear1.rotation.z = gearRotation;
+            gear2.rotation.z = -gearRotation * 1.2;
+            smallGear.rotation.z = gearRotation * 2;
+
+            // Bob scraps
+            scraps.forEach(scrap => {
+                if (!scrap.userData.collected) {
+                    scrap.position.y += Math.sin(currentTime * 0.002 + scrap.userData.bobOffset) * 0.002;
+                    scrap.rotation.y += deltaTime;
+                }
+            });
+
+            // Cape animation
+            cape.rotation.x = 0.2 + Math.sin(currentTime * 0.003) * 0.1;
+            if (player.velocity.length() > 1) {
+                cape.rotation.x += 0.3;
+            }
+
+            // Camera follow
+            const cameraDistance = 8;
+            const cameraHeight = 4;
+
+            camera.position.x = pip.position.x - Math.sin(player.cameraAngleY) * cameraDistance * Math.cos(player.cameraAngleX);
+            camera.position.z = pip.position.z - Math.cos(player.cameraAngleY) * cameraDistance * Math.cos(player.cameraAngleX);
+            camera.position.y = pip.position.y + cameraHeight + Math.sin(player.cameraAngleX) * cameraDistance;
+
+            camera.lookAt(pip.position.x, pip.position.y + 1.5, pip.position.z);
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start animation loop
+        animate(0);
+    </script>
+</body>
+</html>
