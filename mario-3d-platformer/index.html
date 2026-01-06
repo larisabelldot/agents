@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario 3D Platformer</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <!-- Title Screen -->
+    <div id="titleScreen" class="screen active">
+        <div class="title-content">
+            <h1 class="game-title">SUPER MARIO 3D</h1>
+            <div class="menu-options">
+                <button class="menu-btn" id="startBtn">START GAME</button>
+                <button class="menu-btn" id="optionsBtn">OPTIONS</button>
+                <button class="menu-btn" id="controlsBtn">CONTROLS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Options Screen -->
+    <div id="optionsScreen" class="screen">
+        <div class="options-content">
+            <h2>OPTIONS</h2>
+            <div class="option-item">
+                <label>Music Volume:</label>
+                <input type="range" id="musicVolume" min="0" max="100" value="70">
+                <span id="musicVolumeValue">70%</span>
+            </div>
+            <div class="option-item">
+                <label>SFX Volume:</label>
+                <input type="range" id="sfxVolume" min="0" max="100" value="80">
+                <span id="sfxVolumeValue">80%</span>
+            </div>
+            <div class="option-item">
+                <label>Camera Sensitivity:</label>
+                <input type="range" id="cameraSensitivity" min="1" max="10" value="5">
+                <span id="cameraSensitivityValue">5</span>
+            </div>
+            <button class="menu-btn" id="optionsBackBtn">BACK</button>
+        </div>
+    </div>
+
+    <!-- Controls Screen -->
+    <div id="controlsScreen" class="screen">
+        <div class="controls-content">
+            <h2>CONTROLS</h2>
+            <div class="controls-list">
+                <div class="control-item"><span>W / Arrow Up:</span> Move Forward</div>
+                <div class="control-item"><span>S / Arrow Down:</span> Move Backward</div>
+                <div class="control-item"><span>A / Arrow Left:</span> Move Left</div>
+                <div class="control-item"><span>D / Arrow Right:</span> Move Right</div>
+                <div class="control-item"><span>SPACE:</span> Jump</div>
+                <div class="control-item"><span>SHIFT:</span> Run</div>
+                <div class="control-item"><span>Mouse:</span> Rotate Camera</div>
+                <div class="control-item"><span>ESC:</span> Pause Game</div>
+            </div>
+            <button class="menu-btn" id="controlsBackBtn">BACK</button>
+        </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pauseScreen" class="screen">
+        <div class="pause-content">
+            <h2>PAUSED</h2>
+            <button class="menu-btn" id="resumeBtn">RESUME</button>
+            <button class="menu-btn" id="pauseOptionsBtn">OPTIONS</button>
+            <button class="menu-btn" id="quitBtn">QUIT TO MENU</button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="screen">
+        <div class="gameover-content">
+            <h2>GAME OVER</h2>
+            <p id="finalScore">Score: 0</p>
+            <button class="menu-btn" id="retryBtn">RETRY</button>
+            <button class="menu-btn" id="gameOverMenuBtn">MAIN MENU</button>
+        </div>
+    </div>
+
+    <!-- Victory Screen -->
+    <div id="victoryScreen" class="screen">
+        <div class="victory-content">
+            <h1>VICTORY!</h1>
+            <p id="victoryScore">Score: 0</p>
+            <p id="victoryTime">Time: 0:00</p>
+            <button class="menu-btn" id="victoryMenuBtn">MAIN MENU</button>
+        </div>
+    </div>
+
+    <!-- Game Canvas and HUD -->
+    <div id="gameContainer" class="screen">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div class="hud-top">
+                <div class="hud-item">
+                    <span class="hud-label">LIVES</span>
+                    <span id="lives">3</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">COINS</span>
+                    <span id="coins">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">SCORE</span>
+                    <span id="score">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">TIME</span>
+                    <span id="timer">400</span>
+                </div>
+            </div>
+            <div class="hud-bottom">
+                <div id="powerUpIndicator"></div>
+                <div id="starsCollected">
+                    <span>★</span>
+                    <span id="starCount">0/3</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loadingScreen">
+            <div class="loading-content">
+                <h2>LOADING...</h2>
+                <div class="loading-bar">
+                    <div id="loadingProgress"></div>
+                </div>
+                <p id="loadingText">Preparing adventure...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Three.js and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Game Scripts -->
+    <script src="src/utils.js"></script>
+    <script src="src/audio.js"></script>
+    <script src="src/input.js"></script>
+    <script src="src/physics.js"></script>
+    <script src="src/player.js"></script>
+    <script src="src/enemies.js"></script>
+    <script src="src/collectibles.js"></script>
+    <script src="src/powerups.js"></script>
+    <script src="src/level.js"></script>
+    <script src="src/particles.js"></script>
+    <script src="src/camera.js"></script>
+    <script src="src/hud.js"></script>
+    <script src="src/menu.js"></script>
+    <script src="src/game.js"></script>
+    <script src="src/main.js"></script>
+</body>
+</html>
