@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Crossy Road - Mobile Edition</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- Game Canvas -->
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen active">
+        <div class="screen-content">
+            <h1 class="game-title">🐔 CROSSY ROAD</h1>
+            <p class="subtitle">Mobile Edition</p>
+            <div class="menu-options">
+                <button class="btn btn-primary" id="start-btn">START GAME</button>
+                <button class="btn btn-secondary" id="controls-btn">CONTROLS</button>
+                <button class="btn btn-secondary" id="settings-btn">SETTINGS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls Info Screen -->
+    <div id="controls-screen" class="screen">
+        <div class="screen-content">
+            <h2 class="screen-title">🎮 CONTROLS</h2>
+            <div class="controls-info">
+                <div class="control-item">
+                    <div class="control-icon">👆</div>
+                    <h3>Swipe Up</h3>
+                    <p>Move Forward</p>
+                </div>
+                <div class="control-item">
+                    <div class="control-icon">👇</div>
+                    <h3>Swipe Down</h3>
+                    <p>Move Backward</p>
+                </div>
+                <div class="control-item">
+                    <div class="control-icon">👈</div>
+                    <h3>Swipe Left</h3>
+                    <p>Move Left</p>
+                </div>
+                <div class="control-item">
+                    <div class="control-icon">👉</div>
+                    <h3>Swipe Right</h3>
+                    <p>Move Right</p>
+                </div>
+                <div class="control-item">
+                    <div class="control-icon">⌨️</div>
+                    <h3>Arrow Keys</h3>
+                    <p>Desktop Controls</p>
+                </div>
+                <div class="control-item">
+                    <div class="control-icon">📱</div>
+                    <h3>On-Screen Buttons</h3>
+                    <p>Tap to Move</p>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="controls-back-btn">BACK</button>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+        <div class="screen-content">
+            <h2 class="screen-title">⚙️ SETTINGS</h2>
+            <div class="settings-options">
+                <div class="setting-item">
+                    <label for="sound-toggle">🔊 Sound Effects</label>
+                    <input type="checkbox" id="sound-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="music-toggle">🎵 Music</label>
+                    <input type="checkbox" id="music-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="vibration-toggle">📳 Vibration</label>
+                    <input type="checkbox" id="vibration-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="controls-toggle">🎮 Show On-Screen Controls</label>
+                    <input type="checkbox" id="controls-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="particles-toggle">✨ Particle Effects</label>
+                    <input type="checkbox" id="particles-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="sensitivity-slider">👆 Swipe Sensitivity</label>
+                    <input type="range" id="sensitivity-slider" min="20" max="100" value="50">
+                </div>
+            </div>
+            <button class="btn btn-primary" id="settings-back-btn">BACK</button>
+        </div>
+    </div>
+
+    <!-- Game Screen HUD -->
+    <div id="game-hud" class="hud hidden">
+        <!-- Top HUD -->
+        <div class="hud-top">
+            <div class="score-display">
+                <div class="score-label">SCORE</div>
+                <div class="score-value" id="score">0</div>
+            </div>
+            <div class="high-score-display">
+                <div class="high-score-label">BEST</div>
+                <div class="high-score-value" id="high-score">0</div>
+            </div>
+            <button class="btn-icon" id="pause-btn">⏸️</button>
+        </div>
+
+        <!-- Lives Display -->
+        <div class="lives-display" id="lives-display">
+            <span class="life">❤️</span>
+            <span class="life">❤️</span>
+            <span class="life">❤️</span>
+        </div>
+
+        <!-- Mobile Controls Overlay -->
+        <div id="mobile-controls" class="mobile-controls">
+            <!-- D-Pad Style Controls -->
+            <div class="dpad-container">
+                <button class="dpad-btn dpad-up" data-direction="forward">▲</button>
+                <button class="dpad-btn dpad-left" data-direction="left">◀</button>
+                <button class="dpad-btn dpad-center">⊕</button>
+                <button class="dpad-btn dpad-right" data-direction="right">▶</button>
+                <button class="dpad-btn dpad-down" data-direction="backward">▼</button>
+            </div>
+
+            <!-- Swipe Gesture Area -->
+            <div class="swipe-area" id="swipe-area">
+                <div class="swipe-indicator" id="swipe-indicator"></div>
+                <div class="swipe-hint">Swipe to Move</div>
+            </div>
+        </div>
+
+        <!-- Power-ups Display -->
+        <div class="powerups-display">
+            <div class="powerup" id="shield-powerup">
+                <span class="powerup-icon">🛡️</span>
+                <span class="powerup-count">0</span>
+            </div>
+            <div class="powerup" id="speed-powerup">
+                <span class="powerup-icon">⚡</span>
+                <span class="powerup-count">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pause-screen" class="screen overlay-screen">
+        <div class="screen-content">
+            <h2 class="screen-title">⏸️ PAUSED</h2>
+            <div class="menu-options">
+                <button class="btn btn-primary" id="resume-btn">RESUME</button>
+                <button class="btn btn-secondary" id="restart-btn">RESTART</button>
+                <button class="btn btn-secondary" id="quit-btn">QUIT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover-screen" class="screen overlay-screen">
+        <div class="screen-content">
+            <h2 class="screen-title game-over-title">GAME OVER</h2>
+            <div class="stats-display">
+                <div class="stat-item">
+                    <div class="stat-label">Final Score</div>
+                    <div class="stat-value" id="final-score">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Best Score</div>
+                    <div class="stat-value" id="final-high-score">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Distance</div>
+                    <div class="stat-value" id="final-distance">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Coins Collected</div>
+                    <div class="stat-value" id="final-coins">0</div>
+                </div>
+            </div>
+            <div class="menu-options">
+                <button class="btn btn-primary" id="play-again-btn">PLAY AGAIN</button>
+                <button class="btn btn-secondary" id="menu-btn">MAIN MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Touch Feedback -->
+    <div id="touch-feedback" class="touch-feedback"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen loading-screen">
+        <div class="loader"></div>
+        <p>Loading...</p>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
