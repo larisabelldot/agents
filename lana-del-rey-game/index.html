@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#8B2635">
+    <title>Lana Del Rey - Song Guessing Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <h1 class="vintage-title">Lana Del Rey</h1>
+            <p class="loading-text">Loading the paradise...</p>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Container -->
+    <div id="game-container" class="hidden">
+        <!-- 3D Canvas Background -->
+        <canvas id="three-canvas"></canvas>
+
+        <!-- Game UI Overlay -->
+        <div class="game-overlay">
+            <!-- Header -->
+            <header class="game-header">
+                <div class="header-content">
+                    <h1 class="game-title">Lana Del Rey</h1>
+                    <p class="subtitle">Song Guessing Game</p>
+                </div>
+                <div class="score-board">
+                    <div class="score-item">
+                        <span class="score-label">Score</span>
+                        <span class="score-value" id="score">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Streak</span>
+                        <span class="score-value" id="streak">0</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Start Screen -->
+            <div id="start-screen" class="screen active">
+                <div class="screen-content">
+                    <h2 class="screen-title">Welcome to Paradise</h2>
+                    <p class="screen-description">Guess Lana Del Rey songs from lyric hints</p>
+                    <div class="difficulty-selector">
+                        <h3>Select Difficulty</h3>
+                        <div class="difficulty-buttons">
+                            <button class="btn-difficulty" data-difficulty="easy">
+                                <span class="difficulty-name">Born to Die</span>
+                                <span class="difficulty-desc">Easy - Full lyrics</span>
+                            </button>
+                            <button class="btn-difficulty" data-difficulty="medium">
+                                <span class="difficulty-name">Ultraviolence</span>
+                                <span class="difficulty-desc">Medium - Partial lyrics</span>
+                            </button>
+                            <button class="btn-difficulty" data-difficulty="hard">
+                                <span class="difficulty-name">Norman Rockwell</span>
+                                <span class="difficulty-desc">Hard - One word hints</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Screen -->
+            <div id="game-screen" class="screen">
+                <div class="game-content">
+                    <!-- Question Counter -->
+                    <div class="question-info">
+                        <span id="question-counter">Question 1/10</span>
+                        <span id="timer" class="timer">30s</span>
+                    </div>
+
+                    <!-- Lyric Hint Display -->
+                    <div class="lyric-display">
+                        <div class="vinyl-decoration"></div>
+                        <p id="lyric-hint" class="lyric-text">"Blue jeans, white shirt..."</p>
+                        <div class="rose-decoration"></div>
+                    </div>
+
+                    <!-- Answer Options -->
+                    <div id="answer-options" class="answer-grid">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <!-- Power-ups -->
+                    <div class="powerups">
+                        <button class="btn-powerup" id="skip-btn" title="Skip question">
+                            <span class="powerup-icon">⏭</span>
+                            <span class="powerup-count" id="skip-count">3</span>
+                        </button>
+                        <button class="btn-powerup" id="hint-btn" title="Remove 2 wrong answers">
+                            <span class="powerup-icon">💡</span>
+                            <span class="powerup-count" id="hint-count">2</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="result-screen" class="screen">
+                <div class="screen-content">
+                    <h2 class="screen-title" id="result-title">Game Over</h2>
+                    <div class="result-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="final-score">0</span>
+                            <span class="stat-label">Final Score</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="correct-answers">0</span>
+                            <span class="stat-label">Correct</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="best-streak">0</span>
+                            <span class="stat-label">Best Streak</span>
+                        </div>
+                    </div>
+                    <p class="result-message" id="result-message">Summertime Sadness...</p>
+                    <div class="result-actions">
+                        <button class="btn-primary" id="play-again-btn">Play Again</button>
+                        <button class="btn-secondary" id="change-difficulty-btn">Change Difficulty</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
