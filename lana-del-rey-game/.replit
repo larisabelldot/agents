@@ -1,0 +1,13 @@
+run = "python3 -m http.server 3000"
+
+[nix]
+channel = "stable-22_11"
+
+[deployment]
+run = ["sh", "-c", "python3 -m http.server 3000"]
+deploymentTarget = "static"
+publicDir = "/"
+
+[[ports]]
+localPort = 3000
+externalPort = 80

@@ -94,6 +94,32 @@ npx http-server
 # Then visit: http://localhost:8000
 ```
 
+### 🔷 Deploy on Replit
+
+**One-Click Deploy:**
+
+[![Run on Replit](https://replit.com/badge/github/larisabelldot/agents)](https://replit.com/@larisabelldot/agents)
+
+**Manual Setup:**
+
+1. **Import to Replit:**
+   - Go to [Replit](https://replit.com)
+   - Click "Create Repl" or import from GitHub
+   - Select this repository or upload the `lana-del-rey-game` folder
+
+2. **Run the Game:**
+   - Click the "Run" button at the top
+   - Replit will automatically start a Python HTTP server
+   - The game will open in the webview panel
+
+3. **Share Your Game:**
+   - Click "Share" in the top right
+   - Get your unique Replit URL
+   - Share with friends to play!
+
+**Replit Configuration:**
+The project includes `.replit` and `replit.nix` files for automatic setup. The game runs on port 3000 with a Python HTTP server.
+
 ## 🎮 How to Play
 
 1. **Select Difficulty** - Choose your challenge level
@@ -148,7 +174,10 @@ lana-del-rey-game/
 ├── index.html      # Main HTML structure
 ├── styles.css      # Vintage cinematic styling
 ├── game.js         # Game logic and 3D scene
-└── README.md       # This file
+├── README.md       # This file
+├── .replit         # Replit configuration
+├── replit.nix      # Replit dependencies
+└── .replitignore   # Replit ignore file
 ```
 
 ### Browser Compatibility
