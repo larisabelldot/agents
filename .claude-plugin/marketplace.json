@@ -2131,6 +2131,32 @@
         "./skills/turborepo-caching",
         "./skills/bazel-build-optimization"
       ]
+    },
+    {
+      "name": "3d-particle-playground",
+      "source": "./plugins/3d-particle-playground",
+      "description": "Interactive 3D particle visualization with customizable animations, mouse interactions, and color themes using Three.js",
+      "version": "1.0.0",
+      "author": {
+        "name": "Claude",
+        "url": "https://github.com/anthropics"
+      },
+      "homepage": "https://github.com/wshobson/agents",
+      "repository": "https://github.com/wshobson/agents",
+      "license": "MIT",
+      "keywords": [
+        "3d",
+        "particles",
+        "threejs",
+        "visualization",
+        "interactive",
+        "webgl",
+        "animation"
+      ],
+      "category": "creative",
+      "strict": false,
+      "commands": [],
+      "agents": []
     }
   ]
 }
