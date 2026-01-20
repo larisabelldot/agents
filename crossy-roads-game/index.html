@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Crossy Roads - A fun 3D endless hopping game. Dodge traffic, hop on logs, and see how far you can go!">
+    <title>Crossy Roads - 3D Mobile Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loading-icon">
+                <div class="chicken-loading"></div>
+            </div>
+            <h1 class="loading-title">CROSSY ROADS</h1>
+            <p class="loading-text">Loading game...</p>
+            <div class="loading-bar">
+                <div class="loading-progress" id="loading-progress"></div>
+            </div>
+            <p class="loading-tip" id="loading-tip">Tip: Swipe to move!</p>
+        </div>
+    </div>
+
+    <!-- Main Game Container -->
+    <div id="game-container" class="hidden">
+        <!-- 3D Canvas -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Game HUD -->
+        <div id="game-hud" class="hidden">
+            <div class="hud-top">
+                <div class="score-display">
+                    <span class="score-icon">🏆</span>
+                    <span id="current-score">0</span>
+                </div>
+                <div class="coin-display">
+                    <span class="coin-icon">🪙</span>
+                    <span id="coin-count">0</span>
+                </div>
+                <button id="pause-btn" class="hud-button">⏸️</button>
+            </div>
+            <div class="hud-high-score">
+                <span>BEST: </span>
+                <span id="high-score">0</span>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen">
+            <div class="screen-content">
+                <h1 class="game-logo">CROSSY<br>ROADS</h1>
+                <div class="character-select">
+                    <h3>SELECT CHARACTER</h3>
+                    <div class="character-carousel">
+                        <button class="carousel-btn left" id="char-prev">❮</button>
+                        <div class="character-display">
+                            <div id="character-preview"></div>
+                            <p id="character-name">Chicken</p>
+                        </div>
+                        <button class="carousel-btn right" id="char-next">❯</button>
+                    </div>
+                </div>
+                <div class="stats-display">
+                    <div class="stat">
+                        <span class="stat-label">HIGH SCORE</span>
+                        <span class="stat-value" id="menu-high-score">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">TOTAL COINS</span>
+                        <span class="stat-value" id="total-coins">0</span>
+                    </div>
+                </div>
+                <button id="play-btn" class="main-button">
+                    <span>TAP TO PLAY</span>
+                </button>
+                <div class="controls-hint">
+                    <p>📱 Swipe or tap to move</p>
+                    <p>⌨️ Arrow keys or WASD</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Screen -->
+        <div id="pause-screen" class="screen hidden">
+            <div class="screen-content">
+                <h2 class="screen-title">PAUSED</h2>
+                <div class="pause-stats">
+                    <p>Score: <span id="pause-score">0</span></p>
+                    <p>Coins: <span id="pause-coins">0</span></p>
+                </div>
+                <div class="pause-buttons">
+                    <button id="resume-btn" class="menu-button">▶️ RESUME</button>
+                    <button id="restart-btn" class="menu-button">🔄 RESTART</button>
+                    <button id="quit-btn" class="menu-button">🏠 MAIN MENU</button>
+                </div>
+                <div class="settings-section">
+                    <h3>SETTINGS</h3>
+                    <div class="setting-row">
+                        <span>Sound</span>
+                        <button id="sound-toggle" class="toggle-btn on">ON</button>
+                    </div>
+                    <div class="setting-row">
+                        <span>Music</span>
+                        <button id="music-toggle" class="toggle-btn on">ON</button>
+                    </div>
+                    <div class="setting-row">
+                        <span>Vibration</span>
+                        <button id="vibration-toggle" class="toggle-btn on">ON</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="screen hidden">
+            <div class="screen-content">
+                <h2 class="gameover-title">GAME OVER</h2>
+                <div class="gameover-icon" id="death-icon">💀</div>
+                <div class="final-score">
+                    <p class="score-label">SCORE</p>
+                    <p class="score-value" id="final-score">0</p>
+                </div>
+                <div class="new-record hidden" id="new-record">
+                    <span>🎉 NEW RECORD! 🎉</span>
+                </div>
+                <div class="gameover-stats">
+                    <div class="stat-row">
+                        <span>Coins Collected</span>
+                        <span id="final-coins">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Best Score</span>
+                        <span id="final-best">0</span>
+                    </div>
+                </div>
+                <div class="gameover-buttons">
+                    <button id="retry-btn" class="main-button">
+                        <span>🔄 TRY AGAIN</span>
+                    </button>
+                    <button id="home-btn" class="secondary-button">
+                        <span>🏠 MAIN MENU</span>
+                    </button>
+                </div>
+                <button id="share-btn" class="share-button">
+                    📤 SHARE SCORE
+                </button>
+            </div>
+        </div>
+
+        <!-- Tutorial Overlay -->
+        <div id="tutorial-overlay" class="hidden">
+            <div class="tutorial-content">
+                <div class="tutorial-step" id="tutorial-step">
+                    <div class="tutorial-icon">👆</div>
+                    <p class="tutorial-text">Swipe UP to hop forward</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Touch Controls (visual feedback) -->
+        <div id="touch-indicator" class="hidden">
+            <div class="swipe-arrow"></div>
+        </div>
+
+        <!-- Death Reason Display -->
+        <div id="death-reason" class="hidden">
+            <span id="death-text"></span>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="bgm" loop preload="auto"></audio>
+    <audio id="sfx-hop" preload="auto"></audio>
+    <audio id="sfx-coin" preload="auto"></audio>
+    <audio id="sfx-splash" preload="auto"></audio>
+    <audio id="sfx-hit" preload="auto"></audio>
+    <audio id="sfx-train" preload="auto"></audio>
+    <audio id="sfx-eagle" preload="auto"></audio>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Game Script -->
+    <script src="game.js"></script>
+</body>
+</html>
